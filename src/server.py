@@ -115,11 +115,11 @@ def start_analysis():
 @jwt_required()
 def add_review():
     data = request.json
-    reviewer_id = data.get("reviewer")
-    worker_id = data.get("under_review")
-    review_text = data.get("review")
+    reviewer_id = data.get("reviewer_id")
+    worker_id = data.get("worker_id")
+    review_text = data.get("review_text")
 
-    if not worker_id or not review_text:
+    if not worker_id or not review_text or not reviewer_id:
         return jsonify({"error": "Поля не заполнены"}), 400
 
     session = Session()

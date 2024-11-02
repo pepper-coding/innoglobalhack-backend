@@ -7,4 +7,4 @@ DEBUG: pause: True
 DEBUG: repl: python
 DEBUG: args: ['D:\\Python все работы\\инополис\\src\\api_requests.py']
 INFO: return code: 1 (0x1)
-INFO: elapsed time: 2.516661
+INFO: elapsed time: 2.500631

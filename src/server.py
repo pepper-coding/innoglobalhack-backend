@@ -111,6 +111,33 @@ def start_analysis():
     finally:
         session.close()
 
+@app.route('/add_review', methods=['POST'])
+@jwt_required()
+def add_review():
+    data = request.json
+    reviewer_id = data.get("reviewer")
+    worker_id = data.get("under_review")
+    review_text = data.get("review")
+
+    if not worker_id or not review_text:
+        return jsonify({"error": "Поля не заполнены"}), 400
+
+    session = Session()
+    try:
+        # Создаем новый отзыв
+        new_review = ReviewsData(ID_reviewer=reviewer_id, ID_under_review=worker_id, review=review_text)
+
+        session.add(new_review)
+        session.commit()
+
+        return jsonify({"message": "Отзыв успешно добавлен", "ID_under_review": worker_id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
 @app.route('/get_all_analysis_requests', methods=['GET'])
 @jwt_required()
 def get_all_analysis_requests():
@@ -144,7 +171,7 @@ def get_review_selected():
         for worker_id in worker_ids:
             # Получаем отзывы из таблицы reviews_data
             reviews = session.query(ReviewsData).filter(ReviewsData.ID_under_review == worker_id).all()
-            user_feedback = "\n\n".join(review.review for review in reviews)  # Объединяем отзывы с новой строки
+            user_feedback = [review.review for review in reviews]
             responses.append({"worker_id": worker_id, "user_feedback": user_feedback})
         return jsonify(responses), 200
     finally:

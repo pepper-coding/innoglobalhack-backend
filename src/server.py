@@ -50,15 +50,16 @@ def login():
 
 
 @app.route('/get_all', methods=['GET'])
-@jwt_required()
+
 def get_all_workers():
     session = Session()
     try:
         # Получаем уникальные ID_under_review из таблицы reviews_data
         unique_worker_ids = session.query(ReviewsData.ID_under_review).distinct().all()
         # Преобразуем результаты в плоский список
+        print(unique_worker_ids)
         worker_ids = [worker_id[0] for worker_id in unique_worker_ids]
-
+        worker_ids.sort(reverse=True)
         return jsonify(workers_data=worker_ids), 200
     finally:
         session.close()

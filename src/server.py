@@ -8,6 +8,7 @@ from database_create import User, ReviewsData  # Убедитесь, что мо
 from dotenv import load_dotenv
 import os
 import hashlib
+from datetime import timedelta
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -17,6 +18,7 @@ CORS(app)
 
 # Настройка JWT
 app.config['JWT_SECRET_KEY'] = 'ino_pepper_coding'  # Замените на ваш секретный ключ
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(weeks=1)
 jwt = JWTManager(app)
 
 # Создание сессии базы данных
@@ -57,7 +59,6 @@ def get_all_workers():
         # Получаем уникальные ID_under_review из таблицы reviews_data
         unique_worker_ids = session.query(ReviewsData.ID_under_review).distinct().all()
         # Преобразуем результаты в плоский список
-        print(unique_worker_ids)
         worker_ids = [worker_id[0] for worker_id in unique_worker_ids]
         worker_ids.sort(reverse=True)
         return jsonify(workers_data=worker_ids), 200

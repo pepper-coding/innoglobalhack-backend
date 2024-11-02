@@ -8,6 +8,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 from dotenv import load_dotenv
 from database_create import ReviewsData
+from sqlalchemy.orm import Session
+from database_create import User, ReviewsData, NeuralAnalysisRequest
 
 
 load_dotenv()
@@ -126,13 +128,25 @@ def create_variables(criterias, employee_ids):
             # Проверяем наличие всех критериев в результате
             if all(criterion in reviews_lower for criterion in criterias_lower):
                 break  # Выходим из цикла, если все критерии присутствуют
-        print("Оценка сотрудника", employee_id, ":", reviews, "\n\n")
         if reviews:
             all_reviews.append(reviews)
             all_employee.append(employee_id)
+        analysis_request = session.query(NeuralAnalysisRequest).filter(
+        NeuralAnalysisRequest.worker_ids == all_employee
+    ).first()
 
-    for elem in all_reviews:
-        print(f"{elem}\n\n")
+    if analysis_request:
+        # Обновляем поля для найденной записи
+        analysis_request.analysis_status = "completed"
+        analysis_request.analysis_result = all_reviews  # Предполагается, что это строка или JSON-данные
+
+        session.commit()
+        session.close()
+        print("Запись обновлена в базе данных.")
+    else:
+        print("Запись с заданными worker_ids не найдена.")
+        # print(f"{elem}\n\n")
+
 
 def get_employee_criteria(employee_id, employee_reviews):
     prompt = prepare_initial_prompt(employee_id, employee_reviews)
@@ -163,7 +177,6 @@ def get_employee_criteria(employee_id, employee_reviews):
 
 def get_criterias(selected_employee_ids):
     all_criteria = []
-
     for employee_id in selected_employee_ids:
         employee_reviews = get_reviews_from_db(employee_id)
         criteria = get_employee_criteria(employee_id, employee_reviews)
@@ -174,12 +187,12 @@ def get_criterias(selected_employee_ids):
             all_criteria.append((employee_id, criteria_list))  # Храним кортеж (ID, критерии)
 
     unified_criteria = unify_criteria([criterion for _, criteria_list in all_criteria for criterion in criteria_list])
-    return unified_criteria, all_criteria  # Возвращаем также все критерии для ID
+    return unified_criteria  # Возвращаем также все критерии для ID
 
-async def start_neural_analysis(worker_ids):
+def start_neural_analysis(worker_ids):
     # Здесь выполняйте ваши действия для анализа
-    unified_criteria, all_criteria = await get_criterias(worker_ids)
-    await create_variables(unified_criteria, worker_ids)
+    unified_criteria = get_criterias(worker_ids)
+    create_variables(unified_criteria, worker_ids)
 
 # if __name__ == "__main__":
 #     selected_employee_ids = ["65282", "57549", "113201"]  # Замените на ваши ID

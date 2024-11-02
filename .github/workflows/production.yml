@@ -1,0 +1,25 @@
+name: production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  checkout:
+    runs-on:
+      labels:
+        - self-hosted
+        - backend
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+  build:
+    needs: checkout
+    runs-on:
+      labels:
+        - self-hosted
+        - backend
+    steps:
+      - name: build
+        run: docker build ./ -f dockerfile -t backend

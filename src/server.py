@@ -69,7 +69,6 @@ def get_all_workers():
 @app.route('/start_analysis', methods=['POST'])
 @jwt_required()
 def start_analysis():
-    user_id = get_jwt_identity()
     data = request.json
     worker_ids = data.get('worker_ids')
 
@@ -94,7 +93,6 @@ def start_analysis():
         # Если нет, создаем новый запрос
         analysis_request = NeuralAnalysisRequest(
             worker_ids=','.join(map(str, worker_ids)),
-            user_id=user_id,
             analysis_status="in_progress"
         )
 

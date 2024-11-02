@@ -49,7 +49,6 @@ def prepare_initial_prompt(employee_id, employee_reviews):
         "В ответе содержатся только названия критериев, без номеров. "
         "Количество критериев не указывать. Вывод критериев в одной строке.\n\n"
         f"Сотрудник ID: {employee_id}\n"
-        "Пример:\n\n"
     )
 
     unique_reviews = list(set(employee_reviews))[:5]

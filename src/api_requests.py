@@ -13,18 +13,16 @@ hashed_password = hashlib.sha256(password.encode()).hexdigest()
 print(hashed_password)
 # Подготавливаем данные для запроса
 data = {
-    "login": login,
-    "password": password
+    "worker_ids" :["31", "20906"]
 }
 
 # Выполняем POST-запрос на авторизацию
-response = requests.get(url)
+response = requests.post(url, data)
 
 # Проверяем статус ответа
 if response.status_code == 200:
     # Если авторизация успешна, выводим токен
-    token = response.json().get("access_token")
-    print("Токен доступа:", token)
+    print(response.text)
 else:
     # Если произошла ошибка, выводим сообщение
     print("Ошибка авторизации:", response.json().get("msg"))

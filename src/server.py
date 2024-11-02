@@ -52,7 +52,7 @@ def login():
 
 
 @app.route('/get_all', methods=['GET'])
-
+@jwt_required()
 def get_all_workers():
     session = Session()
     try:
@@ -144,7 +144,7 @@ def get_review_selected():
         for worker_id in worker_ids:
             # Получаем отзывы из таблицы reviews_data
             reviews = session.query(ReviewsData).filter(ReviewsData.ID_under_review == worker_id).all()
-            user_feedback = [review.review for review in reviews]
+            user_feedback = "\n\n".join(review.review for review in reviews)  # Объединяем отзывы с новой строки
             responses.append({"worker_id": worker_id, "user_feedback": user_feedback})
         return jsonify(responses), 200
     finally:

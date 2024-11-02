@@ -2,7 +2,7 @@ import requests
 import hashlib
 
 # Указываем URL вашего API
-url = "http://localhost:8000/login"
+url = "http://localhost:8000/get_all"
 
 # Данные для авторизации
 login = "hr_manager"
@@ -14,11 +14,11 @@ print(hashed_password)
 # Подготавливаем данные для запроса
 data = {
     "login": login,
-    "password": hashed_password
+    "password": password
 }
 
 # Выполняем POST-запрос на авторизацию
-response = requests.post(url, json=data)
+response = requests.get(url)
 
 # Проверяем статус ответа
 if response.status_code == 200:

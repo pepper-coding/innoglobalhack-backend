@@ -76,38 +76,38 @@ def start_analysis():
         return jsonify({"error": "Некорректные данные. worker_ids должен быть списком"}), 400
 
     session = Session()
-    try:
-        # Проверяем, есть ли уже запрос с такими же worker_ids
-        existing_request = session.query(NeuralAnalysisRequest).filter(
-            NeuralAnalysisRequest.worker_ids == ','.join(map(str, worker_ids))
-        ).first()
+    # try:
+    # Проверяем, есть ли уже запрос с такими же worker_ids
+    existing_request = session.query(NeuralAnalysisRequest).filter(
+        NeuralAnalysisRequest.worker_ids == ','.join(map(str, worker_ids))
+    ).first()
 
-        if existing_request:
-            # Если запрос уже существует, возвращаем результат анализа
-            return jsonify({
-                "request_id": existing_request.id,
-                "analysis_result": existing_request.analysis_result,
-                "analysis_status": existing_request.analysis_status
-            }), 200
+    if existing_request:
+        # Если запрос уже существует, возвращаем результат анализа
+        return jsonify({
+            "request_id": existing_request.id,
+            "analysis_result": existing_request.analysis_result,
+            "analysis_status": existing_request.analysis_status
+        }), 200
 
-        # Если нет, создаем новый запрос
-        analysis_request = NeuralAnalysisRequest(
-            worker_ids=','.join(map(str, worker_ids)),
-            analysis_status="in_progress"
-        )
+    # Если нет, создаем новый запрос
+    analysis_request = NeuralAnalysisRequest(
+        worker_ids=','.join(map(str, worker_ids)),
+        analysis_status="in_progress"
+    )
 
-        session.add(analysis_request)
-        session.commit()
+    session.add(analysis_request)
+    session.commit()
 
-        # Запускаем асинхронный анализ
-        asyncio.run(start_neural_analysis(worker_ids))  # Убираем request_id
+    # Запускаем асинхронный анализ
+    asyncio.run(start_neural_analysis(worker_ids))  # Убираем request_id
 
-        return jsonify({"message": "Анализ начат", "request_id": analysis_request.id}), 201
-    except Exception as e:
-        session.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        session.close()
+    return jsonify({"message": "Анализ начат", "request_id": analysis_request.id}), 201
+    # except Exception as e:
+    #     session.rollback()
+    #     return jsonify({"error": str(e)}), 500
+    # finally:
+    session.close()
 
 @app.route('/add_review', methods=['POST'])
 @jwt_required()
@@ -121,19 +121,19 @@ def add_review():
         return jsonify({"error": "Поля не заполнены"}), 400
 
     session = Session()
-    try:
-        # Создаем новый отзыв
-        new_review = ReviewsData(ID_reviewer=reviewer_id, ID_under_review=worker_id, review=review_text)
+    # try:
+    # Создаем новый отзыв
+    new_review = ReviewsData(ID_reviewer=reviewer_id, ID_under_review=worker_id, review=review_text)
 
-        session.add(new_review)
-        session.commit()
+    session.add(new_review)
+    session.commit()
 
-        return jsonify({"message": "Отзыв успешно добавлен", "ID_under_review": worker_id}), 201
-    except Exception as e:
-        session.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        session.close()
+    return jsonify({"message": "Отзыв успешно добавлен", "ID_under_review": worker_id}), 201
+    # except Exception as e:
+        # session.rollback()
+        # return jsonify({"error": str(e)}), 500
+    # finally:
+    session.close()
 
 
 @app.route('/get_all_analysis_requests', methods=['GET'])

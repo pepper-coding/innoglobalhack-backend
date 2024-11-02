@@ -4,12 +4,17 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from config import DATABASE_URL
-from database_create import User, ReviewsData  # Убедитесь, что модель User импортируется корректно
+from database_create import User, ReviewsData, NeuralAnalysisRequest  # Убедитесь, что модель User импортируется корректно
 from dotenv import load_dotenv
 import os
 import hashlib
+from api_get import start_neural_analysis
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 load_dotenv()
+
+executor = ThreadPoolExecutor(max_workers=5)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 app = Flask(__name__)
@@ -76,38 +81,36 @@ def start_analysis():
         return jsonify({"error": "Некорректные данные. worker_ids должен быть списком"}), 400
 
     session = Session()
-    # try:
-    # Проверяем, есть ли уже запрос с такими же worker_ids
     existing_request = session.query(NeuralAnalysisRequest).filter(
-        NeuralAnalysisRequest.worker_ids == ','.join(map(str, worker_ids))
+        NeuralAnalysisRequest.worker_ids == worker_ids
     ).first()
 
     if existing_request:
-        # Если запрос уже существует, возвращаем результат анализа
+        session.close()
         return jsonify({
             "request_id": existing_request.id,
             "analysis_result": existing_request.analysis_result,
             "analysis_status": existing_request.analysis_status
         }), 200
 
-    # Если нет, создаем новый запрос
+    # Создаем новый запрос
     analysis_request = NeuralAnalysisRequest(
-        worker_ids=','.join(map(str, worker_ids)),
+        worker_ids=worker_ids,
         analysis_status="in_progress"
     )
-
     session.add(analysis_request)
     session.commit()
 
-    # Запускаем асинхронный анализ
-    asyncio.run(start_neural_analysis(worker_ids))  # Убираем request_id
-
-    return jsonify({"message": "Анализ начат", "request_id": analysis_request.id}), 201
-    # except Exception as e:
-    #     session.rollback()
-    #     return jsonify({"error": str(e)}), 500
-    # finally:
+    # Получаем ID перед закрытием сессии
+    request_id = analysis_request.id
     session.close()
+
+    # Запускаем фоновую задачу анализа
+    executor.submit(start_neural_analysis, worker_ids)
+
+    return jsonify({"message": "Анализ начат", "request_id": request_id}), 201
+
+
 
 @app.route('/add_review', methods=['POST'])
 @jwt_required()
@@ -137,7 +140,7 @@ def add_review():
 
 
 @app.route('/get_all_analysis_requests', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def get_all_analysis_requests():
     session = Session()
     try:

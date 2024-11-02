@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from config import DATABASE_URL
+
 app = Flask(__name__)
 app.debug = True
 # Разрешаем CORS для всех доменов
@@ -57,4 +59,4 @@ def get_review_selected():
 
 # Запуск приложения
 if __name__ == '__main__':
-    app.run(host="26.162.75.128", port=8000)
+    app.run(host="0.0.0.0", port=8000)

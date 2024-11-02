@@ -3,7 +3,6 @@ import requests
 from collections import Counter
 import nltk
 from time import sleep
-nltk.download('wordnet')
 
 def unify_criteria(all_criteria_lists):
     criteria_count = Counter(elem.lower().strip() for elem in all_criteria_lists if elem)  # Убираем пустые строки
@@ -40,23 +39,17 @@ def prepare_initial_prompt(employee_id, employee_reviews):
 
 def prepare_reviews_prompt(employee_id, employee_reviews, criterias):
     prompt = (
-        "Ниже приведены критерии и отзывы о сотруднике. На основе отзывов составьте оценку по каждому критерию от 1 до 5. "
-        "Каждый критерий должен быть оформлен в формате: 'Критерий: Оценка'. Если оценка меньше 4, дайте конкретный совет по улучшению и укажите возможные недостатки. "
-        "Если оценка 5, приведите пример того, что сотрудник сделал, чтобы заслужить эту оценку. "
-        "Затем дайте краткий вывод о работе сотрудника в формате: 'Краткий вывод: [ваш вывод]'. Краткий вывод не больше двух предложений."
-        "Пожалуйста, избегайте дополнительных вопросов и пояснений, дайте только необходимые оценки и советы.\n\n"
-        f"Критерии:\n{', '.join(criterias)}\n\n"
-        f"Сотрудник ID: {employee_id}\n"
-        f"Отзывы: {', '.join(employee_reviews)}\n\n"
-        "Пример ответа:\n"
-        "Ответ:\n"
-        "Ответственность: 4\n"
-        "Совет: Проверять детали перед сдачей задачи.\n"
-        "Коммуникабельность: 5\n"
-        "Пример: Всегда доступен для вопросов и проблем, активно участвует в обсуждениях.\n"
-        "Краткий вывод: сотрудник демонстрирует высокий уровень ответственности и хорошо работает в команде. "
-        "Конец ответа."
-    )
+    "Ниже приведены критерии и отзывы о сотруднике. На основе отзывов составьте оценку по каждому критерию от 1 до 5. "
+    "Формат: 'Критерий: Оценка'. Если оценка меньше 4, дайте конкретный совет по улучшению. "
+    "Если оценка 5, просто укажите, что это высокий уровень. "
+    "Избегайте имен, примеров и лишних пояснений. "
+    "Результат должен содержать только оценки, советы и краткий вывод в формате: 'Краткий вывод: [ваш вывод]'. "
+    "Краткий вывод не должен превышать два предложения.\n\n"
+    f"Критерии:\n{', '.join(criterias)}\n\n"
+    f"Сотрудник ID: {employee_id}\n"
+    f"Отзывы: {', '.join(employee_reviews)}\n\n"
+)
+
     return prompt
 
 def get_employee_review(employee_id, employee_reviews, criteria):
@@ -104,13 +97,13 @@ def create_variables(criterias):
     for employee_id in employee_ids:
         employee_reviews = employee_reviews_map[employee_id]
         unique_reviews = list(set(employee_reviews))
-        print(len(unique_reviews))
+        # print(len(unique_reviews))
         reviews = get_employee_review(employee_id, unique_reviews, criterias)
         sleep(10)
         # print("Оценка сотрудника", employee_id, ":", reviews, "\n\n")
 
         if reviews:
-            all_reviews.append(reviews)
+            all_reviews.append(f"Сотрудник {employee_id}:\n{reviews}")
 
     for elem in all_reviews:
         print(f"{elem}\n\n")
@@ -165,10 +158,10 @@ def get_criterias():
             all_criteria.extend(criteria_list)
 
     unified_criteria = unify_criteria(all_criteria)
-    print("Объединенные критерии", unified_criteria)
+    # print("Объединенные критерии", unified_criteria)
     return unified_criteria
 
 if __name__ == "__main__":
     unified_criteria = get_criterias()
-    print(unified_criteria)
+    # print(unified_criteria)
     create_variables(unified_criteria)

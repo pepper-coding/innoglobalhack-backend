@@ -1,4 +1,6 @@
 import os
+import asyncio
+import aiohttp
 import requests
 from collections import Counter
 from sqlalchemy import create_engine, text
@@ -6,8 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 from dotenv import load_dotenv
 from database_create import ReviewsData
-load_dotenv()
 
+
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Создание движка базы данных и сессии
@@ -119,7 +122,7 @@ def create_variables(criterias, employee_ids):
             # Приводим критерии и отзывы к нижнему регистру для сравнения
             reviews_lower = reviews.lower() if reviews else ""
             criterias_lower = [criterion.lower() for criterion in criterias]
-
+            criterias_lower.append("краткий вывод")
             # Проверяем наличие всех критериев в результате
             if all(criterion in reviews_lower for criterion in criterias_lower):
                 break  # Выходим из цикла, если все критерии присутствуют
@@ -173,13 +176,12 @@ def get_criterias(selected_employee_ids):
     unified_criteria = unify_criteria([criterion for _, criteria_list in all_criteria for criterion in criteria_list])
     return unified_criteria, all_criteria  # Возвращаем также все критерии для ID
 
-def get_employee_ids():
-    query = text("SELECT DISTINCT ID_under_review FROM reviews_data")
-    result = session.execute(query)
-    employee_ids = [row['ID_under_review'] for row in result]
-    return employee_ids
+async def start_neural_analysis(worker_ids):
+    # Здесь выполняйте ваши действия для анализа
+    unified_criteria, all_criteria = await get_criterias(worker_ids)
+    await create_variables(unified_criteria, worker_ids)
 
-if __name__ == "__main__":
-    selected_employee_ids = ["65282", "57549", "113201"]  # Замените на ваши ID
-    unified_criteria, all_criteria = get_criterias(selected_employee_ids)
-    create_variables(unified_criteria, selected_employee_ids)
+# if __name__ == "__main__":
+#     selected_employee_ids = ["65282", "57549", "113201"]  # Замените на ваши ID
+#     unified_criteria, all_criteria = get_criterias(selected_employee_ids)
+#     create_variables(unified_criteria, selected_employee_ids)

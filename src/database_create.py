@@ -1,5 +1,5 @@
 import hashlib
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine, Column, Integer, String, Float, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -33,20 +33,23 @@ class ReviewsData(Base):
     ID_under_review = Column(Float, nullable=False)
     review = Column(String, nullable=False)
 
-# Определение модели SummaryData
-class SummaryData(Base):
-    __tablename__ = 'summary_data'
+
+class NeuralAnalysisRequest(Base):
+    __tablename__ = 'neural_analysis_requests'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ID_under_review = Column(Float, nullable=False)
-    summary_review = Column(String, nullable=False)
+    worker_ids = Column(ARRAY(String), nullable=False)
+    analysis_status = Column(String, default="pending")  # Статус запроса (например, pending, in_progress, completed)
+    analysis_result = Column(String, nullable=True)  # Поле для хранения результатов анализа, если они завершены
+
+# Определение модели SummaryData
 
 class ReviewsToSummary(Base):
     __tablename__ = 'reviews_to_summary'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    reviews_id = Column(String, nullable=False)
-    
+    reviews_id = Column(ARRAY(String), nullable=False)
+
 
 # Функция для хэширования пароля
 def hash_password(password):

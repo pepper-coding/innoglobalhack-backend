@@ -63,24 +63,74 @@ def get_all_workers():
     finally:
         session.close()
 
-@app.route('/get_summary_selected', methods=['POST'])
+
+@app.route('/start_analysis', methods=['POST'])
 @jwt_required()
-def get_summary_selected():
-    worker_ids = request.json.get("worker_ids", [])
-    responses = []
+def start_analysis():
+    user_id = get_jwt_identity()
+    data = request.json
+    worker_ids = data.get('worker_ids')
+
+    if not worker_ids or not isinstance(worker_ids, list):
+        return jsonify({"error": "Некорректные данные. worker_ids должен быть списком"}), 400
+
     session = Session()
     try:
-        for worker_id in worker_ids:
-            # Получаем сводку из таблицы summary_data
-            summary = session.query(SummaryData).filter(SummaryData.ID_under_review == worker_id).first()
-            if summary:
-                responses.append({"worker_id": worker_id, "user_summary": summary.summary_review})
-            else:
-                responses.append({"worker_id": worker_id, "user_summary": "Генерирую сводку"})
-        return jsonify(responses), 200
+        # Проверяем, есть ли уже запрос с такими же worker_ids
+        existing_request = session.query(NeuralAnalysisRequest).filter(
+            NeuralAnalysisRequest.worker_ids == ','.join(map(str, worker_ids))
+        ).first()
+
+        if existing_request:
+            # Если запрос уже существует, возвращаем результат анализа
+            return jsonify({
+                "request_id": existing_request.id,
+                "analysis_result": existing_request.analysis_result,
+                "analysis_status": existing_request.analysis_status
+            }), 200
+
+        # Если нет, создаем новый запрос
+        analysis_request = NeuralAnalysisRequest(
+            worker_ids=','.join(map(str, worker_ids)),
+            user_id=user_id,
+            analysis_status="in_progress"
+        )
+
+        session.add(analysis_request)
+        session.commit()
+
+        # Запускаем асинхронный анализ
+        asyncio.run(start_neural_analysis(worker_ids))  # Убираем request_id
+
+        return jsonify({"message": "Анализ начат", "request_id": analysis_request.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
     finally:
         session.close()
 
+@app.route('/get_all_analysis_requests', methods=['GET'])
+@jwt_required()
+def get_all_analysis_requests():
+    session = Session()
+    try:
+        analysis_requests = session.query(NeuralAnalysisRequest).all()
+
+        response_data = [
+            {
+                "id": request.id,
+                "worker_ids": request.worker_ids,
+                "analysis_status": request.analysis_status,
+                "analysis_result": request.analysis_result
+            }
+            for request in analysis_requests
+        ]
+
+        return jsonify(response_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
 
 @app.route('/get_review_selected', methods=['POST'])
 @jwt_required()

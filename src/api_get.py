@@ -1,18 +1,42 @@
-import json
+import os
 import requests
 from collections import Counter
-import nltk
-from time import sleep
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
+from dotenv import load_dotenv
+from database_create import ReviewsData
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Создание движка базы данных и сессии
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+session = Session()
 
 def unify_criteria(all_criteria_lists):
     criteria_count = Counter(elem.lower().strip() for elem in all_criteria_lists if elem)  # Убираем пустые строки
     most_common_criteria = criteria_count.most_common(5)
     return [criteria for criteria, _ in most_common_criteria]
 
-def load_reviews(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        reviews = json.load(file)
-    return reviews
+def get_reviews_from_db(employee_id):
+    # Создаем сессию для работы с базой данных
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Выполняем запрос к базе данных для получения отзывов по заданному ID
+        query = select(ReviewsData).where(ReviewsData.ID_under_review == employee_id)
+        result = session.execute(query)
+        reviews = [row.review for row in result.scalars()]  # Извлекаем отзывы из результата
+        return reviews
+    except Exception as e:
+        print(f"Произошла ошибка при извлечении отзывов: {e}")
+        return []
+    finally:
+        session.close()  # Закрываем сессию
+
 
 def prepare_initial_prompt(employee_id, employee_reviews):
     prompt = (
@@ -39,16 +63,16 @@ def prepare_initial_prompt(employee_id, employee_reviews):
 
 def prepare_reviews_prompt(employee_id, employee_reviews, criterias):
     prompt = (
-    "Ниже приведены критерии и отзывы о сотруднике. На основе отзывов составьте оценку по каждому критерию от 1 до 5. "
-    "Формат: 'Критерий: Оценка'. Если оценка меньше 4, дайте конкретный совет по улучшению. "
-    "Если оценка 5, просто укажите, что это высокий уровень. "
-    "Избегайте имен, примеров и лишних пояснений. "
-    "Результат должен содержать только оценки, советы и краткий вывод в формате: 'Краткий вывод: [ваш вывод]'. "
-    "Краткий вывод не должен превышать два предложения.\n\n"
-    f"Критерии:\n{', '.join(criterias)}\n\n"
-    f"Сотрудник ID: {employee_id}\n"
-    f"Отзывы: {', '.join(employee_reviews)}\n\n"
-)
+        "Ниже приведены критерии и отзывы о сотруднике. На основе отзывов составьте оценку по каждому критерию от 1 до 5. "
+        "Формат: 'Критерий: Оценка'. Если оценка меньше 4, дайте конкретный совет по улучшению. "
+        "Если оценка 5, просто укажите, что это высокий уровень. "
+        "Избегайте имен, примеров и лишних пояснений. "
+        "Результат должен содержать только оценки, советы и краткий вывод в формате: 'Краткий вывод: [ваш вывод]'. "
+        "Краткий вывод не должен превышать два предложения.\n\n"
+        f"Критерии:\n{', '.join(criterias)}\n\n"
+        f"Сотрудник ID: {employee_id}\n"
+        f"Отзывы: {', '.join(employee_reviews)}\n\n"
+    )
 
     return prompt
 
@@ -59,7 +83,7 @@ def get_employee_review(employee_id, employee_reviews, criteria):
     data = {
         "prompt": prompt,
         "apply_chat_template": True,
-        "system_prompt": "You are a helpful assistant.",
+        "system_prompt": "Вы помощник, который выявляет критерии оценки сотрудников.",
         "max_tokens": 350,
         "temperature": 0.7,
         "top_p": 0.9,
@@ -82,28 +106,27 @@ def get_employee_review(employee_id, employee_reviews, criteria):
 
     return None
 
-def create_variables(criterias):
-    file_path = "sample_reviews.json"
-    reviews = load_reviews(file_path)
-
-    employee_reviews_map = {}
-    for review in reviews:
-        employee_id = review['ID_under_review']
-        employee_reviews_map.setdefault(employee_id, []).append(review['review'])
-
-    employee_ids = list(employee_reviews_map.keys())
+def create_variables(criterias, employee_ids):
     all_reviews = []
-
+    all_employee = []
     for employee_id in employee_ids:
-        employee_reviews = employee_reviews_map[employee_id]
+        employee_reviews = get_reviews_from_db(employee_id)
         unique_reviews = list(set(employee_reviews))
-        # print(len(unique_reviews))
-        reviews = get_employee_review(employee_id, unique_reviews, criterias)
-        sleep(10)
-        # print("Оценка сотрудника", employee_id, ":", reviews, "\n\n")
 
+        while True:
+            reviews = get_employee_review(employee_id, unique_reviews, criterias)
+
+            # Приводим критерии и отзывы к нижнему регистру для сравнения
+            reviews_lower = reviews.lower() if reviews else ""
+            criterias_lower = [criterion.lower() for criterion in criterias]
+
+            # Проверяем наличие всех критериев в результате
+            if all(criterion in reviews_lower for criterion in criterias_lower):
+                break  # Выходим из цикла, если все критерии присутствуют
+        print("Оценка сотрудника", employee_id, ":", reviews, "\n\n")
         if reviews:
-            all_reviews.append(f"Сотрудник {employee_id}:\n{reviews}")
+            all_reviews.append(reviews)
+            all_employee.append(employee_id)
 
     for elem in all_reviews:
         print(f"{elem}\n\n")
@@ -135,33 +158,28 @@ def get_employee_criteria(employee_id, employee_reviews):
 
     return None
 
-def get_criterias():
-    file_path = "sample_reviews.json"
-    reviews = load_reviews(file_path)
-
-    employee_reviews_map = {}
-    for review in reviews:
-        employee_id = review['ID_under_review']
-        employee_reviews_map.setdefault(employee_id, []).append(review['review'])
-
-    employee_ids = list(employee_reviews_map.keys())
+def get_criterias(selected_employee_ids):
     all_criteria = []
 
-    for employee_id in employee_ids:
-        employee_reviews = employee_reviews_map[employee_id]
+    for employee_id in selected_employee_ids:
+        employee_reviews = get_reviews_from_db(employee_id)
         criteria = get_employee_criteria(employee_id, employee_reviews)
-        # print("Критерии для сотрудника", employee_id, ":", criteria)
 
         if criteria:
             criteria = criteria.replace(".", "").replace("\n", "")
             criteria_list = [criterion.strip() for criterion in criteria.split(',') if criterion]
-            all_criteria.extend(criteria_list)
+            all_criteria.append((employee_id, criteria_list))  # Храним кортеж (ID, критерии)
 
-    unified_criteria = unify_criteria(all_criteria)
-    # print("Объединенные критерии", unified_criteria)
-    return unified_criteria
+    unified_criteria = unify_criteria([criterion for _, criteria_list in all_criteria for criterion in criteria_list])
+    return unified_criteria, all_criteria  # Возвращаем также все критерии для ID
+
+def get_employee_ids():
+    query = text("SELECT DISTINCT ID_under_review FROM reviews_data")
+    result = session.execute(query)
+    employee_ids = [row['ID_under_review'] for row in result]
+    return employee_ids
 
 if __name__ == "__main__":
-    unified_criteria = get_criterias()
-    # print(unified_criteria)
-    create_variables(unified_criteria)
+    selected_employee_ids = ["65282", "57549", "113201"]  # Замените на ваши ID
+    unified_criteria, all_criteria = get_criterias(selected_employee_ids)
+    create_variables(unified_criteria, selected_employee_ids)

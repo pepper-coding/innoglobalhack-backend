@@ -21,4 +21,3 @@ def format_dataset(path_file):
     return f"sorted_{path_file}"
 
 # Вызов функции
-format_dataset("review_dataset.json")

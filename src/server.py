@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from config import DATABASE_URL
+
 app = Flask(__name__)
 app.debug = True
 # Разрешаем CORS для всех доменов

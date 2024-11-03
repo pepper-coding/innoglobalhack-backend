@@ -70,6 +70,44 @@ def get_all_workers():
     finally:
         session.close()
 
+@app.route('/start_solo_analys', methods=['POST'])
+@jwt_required()
+def start_analysis():
+    data = request.json
+    worker_ids = data.get('worker_ids')
+
+    if not worker_ids or not isinstance(worker_ids, list):
+        return jsonify({"error": "Некорректные данные. worker_ids должен быть списком"}), 400
+
+    session = Session()
+    existing_request = session.query(NeuralAnalysisRequest).filter(
+        NeuralAnalysisRequest.worker_ids == worker_ids
+    ).first()
+    if existing_request:
+        session.close()
+        return jsonify({
+            "request_id": existing_request.id,
+            "analysis_result": existing_request.analysis_result,
+            "analysis_status": existing_request.analysis_status
+        }), 200
+
+    analysis_request = NeuralAnalysisRequest(
+        worker_ids=worker_ids,
+        analysis_status="in_progress"
+    )
+    worker_id.append("good")
+    worker_id.append("bad")
+    session.add(analysis_request)
+    session.commit()
+
+    # Получаем ID перед закрытием сессии
+    request_id = analysis_request.id
+    session.close()
+
+    # Запускаем фоновую задачу анализа
+    executor.submit(start_neural_analysis, worker_ids)
+
+    return jsonify({"message": "Анализ начат", "request_id": request_id}), 201
 
 @app.route('/start_analysis', methods=['POST'])
 @jwt_required()

@@ -16,6 +16,33 @@ engine = create_engine(DATABASE_URL)
 # Создание базового класса для объявлений моделей
 Base = declarative_base()
 
+perfect_and_bad_data = [
+    # Отзывы для сотрудника с ID 101 (хорошая производительность)
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Великолепное выполнение всех задач вовремя."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Обладает превосходными навыками командной работы."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Постоянно стремится к улучшению результатов."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Ответственен и способен решать сложные задачи самостоятельно."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Постоянно проявляет инициативу и предлагает новые идеи."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Демонстрирует высокий уровень профессионализма и знаний."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Активно поддерживает своих коллег и помогает в их обучении."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Отличные коммуникативные навыки и уважение к коллегам."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Постоянно превышает ожидания по качеству выполненной работы."},
+    {"ID_reviewer": "0", "ID_under_review": "good", "review": "Готов брать на себя ответственность за сложные проекты."},
+
+    # Отзывы для сотрудника с ID 102 (плохая производительность)
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Часто пропускает сроки выполнения задач."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Недостаток вовлеченности в рабочий процесс."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Невнимателен к деталям и требует постоянного контроля."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Склонен избегать ответственности за ошибки."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Проявляет низкий уровень профессионализма и знаний."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Часто демонстрирует негативное отношение к коллегам."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Редко проявляет инициативу и избегает новых задач."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Низкая мотивация и стремление к развитию."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Отказывается от конструктивной критики и не учится на ошибках."},
+    {"ID_reviewer": "0", "ID_under_review": "bad", "review": "Часто испытывает трудности с выполнением базовых задач."}
+]
+
+
 # Определение модели User
 class User(Base):
     __tablename__ = 'users'
@@ -81,6 +108,13 @@ def load_reviews_from_json(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
             for review_data in data:
+                new_review = ReviewsData(
+                    ID_reviewer=review_data['ID_reviewer'],
+                    ID_under_review=review_data['ID_under_review'],
+                    review=review_data['review']
+                )
+                session.add(new_review)
+            for review in perfect_and_bad_data:
                 new_review = ReviewsData(
                     ID_reviewer=review_data['ID_reviewer'],
                     ID_under_review=review_data['ID_under_review'],

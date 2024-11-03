@@ -129,8 +129,9 @@ def create_variables(criterias, employee_ids):
             if all(criterion in reviews_lower for criterion in criterias_lower):
                 break  # Выходим из цикла, если все критерии присутствуют
         if reviews:
-            all_reviews.append(reviews)
-            all_employee.append(employee_id)
+            if employee_id!="good" and employee_id != "bad":
+                all_reviews.append(reviews)
+                all_employee.append(employee_id)
         analysis_request = session.query(NeuralAnalysisRequest).filter(
         NeuralAnalysisRequest.worker_ids == all_employee
     ).first()

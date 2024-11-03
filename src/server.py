@@ -72,7 +72,7 @@ def get_all_workers():
 
 @app.route('/start_solo_analys', methods=['POST'])
 @jwt_required()
-def start_analysis():
+def start_solo_analys():
     data = request.json
     worker_ids = data.get('worker_ids')
 
@@ -95,8 +95,8 @@ def start_analysis():
         worker_ids=worker_ids,
         analysis_status="in_progress"
     )
-    worker_id.append("good")
-    worker_id.append("bad")
+    worker_id.append(-1)
+    worker_id.append(-2)
     session.add(analysis_request)
     session.commit()
 

@@ -8,5 +8,5 @@ requests==2.32.3
 fastapi==0.115.4 
 uvicorn==0.32.0
 pyjwt==1.7.1
-pydantic==2.9.2
+pydantic==1.10.7
 fastapi-jwt-auth==0.5.0

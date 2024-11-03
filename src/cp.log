@@ -1,10 +1,10 @@
 INFO: Platform: win32
 INFO: Version Info: v0.3.0
 DEBUG: Log Path: cp.log
-DEBUG: command: ['python', 'D:\\Python все работы\\инополис\\src\\database_create.py']
+DEBUG: command: ['python', 'D:\\Python все работы\\инополис fast api\\database_create.py']
 DEBUG: file: None
 DEBUG: pause: True
 DEBUG: repl: python
-DEBUG: args: ['D:\\Python все работы\\инополис\\src\\database_create.py']
+DEBUG: args: ['D:\\Python все работы\\инополис fast api\\database_create.py']
 INFO: return code: 0 (0x0)
-INFO: elapsed time: 3.156606
+INFO: elapsed time: 2.056073

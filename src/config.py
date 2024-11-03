@@ -1,3 +1,6 @@
-from os import environ
+import os
+from dotenv import load_dotenv
 
-DATABASE_URL = environ.get("DATABASE_URL")
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")

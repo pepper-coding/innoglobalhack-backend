@@ -67,7 +67,7 @@ class NeuralAnalysisRequest(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     worker_ids = Column(ARRAY(String), nullable=False)
     analysis_status = Column(String, default="pending")  # Статус запроса (например, pending, in_progress, completed)
-    analysis_result = Column(String, nullable=True)  # Поле для хранения результатов анализа, если они завершены
+    analysis_result = Column(ARRAY(String), nullable=True)  # Поле для хранения результатов анализа, если они завершены
 
 # Определение модели SummaryData
 
@@ -136,5 +136,6 @@ if __name__ == "__main__":
     filepath = "review_dataset.json"
     create_database()
     create_initial_user()
-    load_reviews_from_json(format_dataset(filepath))
+    # load_reviews_from_json(format_dataset(filepath))
+    load_reviews_from_json("sample_reviews.json")
     print("База данных и начальный пользователь готовы!")

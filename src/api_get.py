@@ -120,7 +120,6 @@ def create_variables(criterias, employee_ids):
 
         while True:
             reviews = get_employee_review(employee_id, unique_reviews, criterias)
-
             # Приводим критерии и отзывы к нижнему регистру для сравнения
             reviews_lower = reviews.lower() if reviews else ""
             criterias_lower = [criterion.lower() for criterion in criterias]
@@ -143,7 +142,19 @@ def create_variables(criterias, employee_ids):
 
         session.commit()
         session.close()
-        print("Запись обновлена в базе данных.")
+        sms_text=""
+        if len(all_employee)>1:
+            sms_text+=f"Краткая+сводка+на+сотрудников+{"+".join(all_employee)}+готова."
+        else:
+            sms_text+=f"Краткая+сводка+na+сотрудника+{all_employee[0]}+готова."
+        url=f"https://sms.ru/sms/send?api_id=687BB7A9-F4B2-8B0C-4E8A-1F9B50E5FEC8&to=79952895051&msg={sms_text}&json=1&translit=1"
+        response = requests.get(url)
+        url="https://notification.pepper-coding.ru/notification/publish"
+        if len(all_employee)>1:
+            data={"text":f"Краткая сводка на сотрудников {"+".join(all_employee)} готова."}
+        else:
+            data={"text":f"Краткая сводка на сотрудника {all_employee[0]} готова."}
+        response = requests.post(url, json=data)
     else:
         print("Запись с заданными worker_ids не найдена.")
         # print(f"{elem}\n\n")
@@ -196,6 +207,6 @@ def start_neural_analysis(worker_ids):
     create_variables(unified_criteria, worker_ids)
 
 # if __name__ == "__main__":
-#     selected_employee_ids = ["65282", "57549", "113201"]  # Замените на ваши ID
-#     unified_criteria, all_criteria = get_criterias(selected_employee_ids)
+#     selected_employee_ids = ["90090"]  # Замените на ваши ID
+#     unified_criteria = get_criterias(selected_employee_ids)
 #     create_variables(unified_criteria, selected_employee_ids)

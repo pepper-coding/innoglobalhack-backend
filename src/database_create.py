@@ -71,12 +71,6 @@ class NeuralAnalysisRequest(Base):
 
 # Определение модели SummaryData
 
-class ReviewsToSummary(Base):
-    __tablename__ = 'reviews_to_summary'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    reviews_id = Column(ARRAY(String), nullable=False)
-
 
 # Функция для хэширования пароля
 def hash_password(password):
@@ -136,6 +130,6 @@ if __name__ == "__main__":
     filepath = "review_dataset.json"
     create_database()
     create_initial_user()
-    # load_reviews_from_json(format_dataset(filepath))
-    load_reviews_from_json("sample_reviews.json")
+    load_reviews_from_json(format_dataset(filepath))
+    # load_reviews_from_json("sample_reviews.json")
     print("База данных и начальный пользователь готовы!")

@@ -149,6 +149,28 @@ def add_review(data: ReviewModel, db: Session = Depends(get_db), Authorize: Auth
 
     return JSONResponse({"message": "Отзыв успешно добавлен", "ID_under_review": data.worker_id})
 
+class ReviewSchema(BaseModel):
+    ID_reviewer: str
+    ID_under_review: str
+    review: str
+
+@app.post('/add_json_reviews', tags=["API pepper_coding"])
+def add_reviews(reviews: List[ReviewSchema], db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+
+    for review_data in reviews:
+        new_review = ReviewsData(
+            ID_reviewer=review_data.ID_reviewer,
+            ID_under_review=review_data.ID_under_review,
+            review=review_data.review
+        )
+        db.add(new_review)
+
+    db.commit()
+    return JSONResponse({"message": "Отзывы успешно добавлены"})
+
+
+
 @app.get('/get_all_analysis_requests', tags=["API pepper_coding"])
 def get_all_analysis_requests(db: Session = Depends(get_db)):
     analysis_requests = db.query(NeuralAnalysisRequest).all()

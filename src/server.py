@@ -252,6 +252,8 @@ def get_analysis_results(data: AnalysisRequestModel, db: Session = Depends(get_d
 
         return JSONResponse(response)
     except:
+        db.query(NeuralAnalysisRequest).filter(NeuralAnalysisRequest.worker_ids == data.worker_ids).delete(synchronize_session='fetch')
+        db.commit()  #
         return JSONResponse({
             "criteria_scores": None
         })

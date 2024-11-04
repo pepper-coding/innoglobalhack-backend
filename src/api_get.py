@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from database_create import ReviewsData
 from sqlalchemy.orm import Session
 from database_create import User, ReviewsData, NeuralAnalysisRequest
-
+from time import sleep
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -90,10 +90,9 @@ def get_employee_review(employee_id, employee_reviews, criteria):
         "apply_chat_template": True,
         "system_prompt": "Вы помощник, который выявляет критерии оценки сотрудников.",
         "max_tokens": 350,
-        "temperature": 0.7,
-        "top_p": 0.9,
-        "frequency_penalty": 0.5,
-        "presence_penalty": 0.5,
+        "temperature": 0.0,
+        "top_p": 0.2,
+        "top_k":15,
         "n": 1
     }
 
@@ -120,6 +119,7 @@ def create_variables(criterias, employee_ids):
 
         while True:
             reviews = get_employee_review(employee_id, unique_reviews, criterias)
+            print(reviews)
             # Приводим критерии и отзывы к нижнему регистру для сравнения
             reviews_lower = reviews.lower() if reviews else ""
             criterias_lower = [criterion.lower() for criterion in criterias]
@@ -127,6 +127,7 @@ def create_variables(criterias, employee_ids):
             # Проверяем наличие всех критериев в результате
             if all(criterion in reviews_lower for criterion in criterias_lower):
                 break  # Выходим из цикла, если все критерии присутствуют
+            sleep(2)
         if reviews:
             if employee_id!=-1 and employee_id != -2:
                 all_reviews.append(reviews)
@@ -143,15 +144,17 @@ def create_variables(criterias, employee_ids):
         session.commit()
         session.close()
         sms_text=""
-        if len(all_employee)>1:
-            sms_text+=f"Краткая+сводка+на+сотрудников+{"+".join(all_employee)}+готова."
-        else:
+        if len(all_employee)==1:
             sms_text+=f"Краткая+сводка+na+сотрудника+{all_employee[0]}+готова."
+        elif len(all_employee)>1:
+            sms_text += f"Краткая+сводка+на+сотрудников+{'+'.join(map(str, all_employee))}+готова."
         url=f"https://sms.ru/sms/send?api_id=687BB7A9-F4B2-8B0C-4E8A-1F9B50E5FEC8&to=79952895051&msg={sms_text}&json=1&translit=1"
         response = requests.get(url)
         url="https://notification.pepper-coding.ru/notification/publish"
+        data={}
         if len(all_employee)>1:
-            data={"text":f"Краткая сводка на сотрудников {"+".join(all_employee)} готова."}
+            data={"text":f"Краткая сводка на сотрудников {" ".join(map(str, all_employee))} готова."}
+
         else:
             data={"text":f"Краткая сводка на сотрудника {all_employee[0]} готова."}
         response = requests.post(url, json=data)
@@ -170,6 +173,7 @@ def get_employee_criteria(employee_id, employee_reviews):
         "system_prompt": "Вы помощник, который выявляет критерии оценки сотрудников.",
         "max_tokens": 300,
         "n": 1,
+        "top_k":19,
         "temperature": 0.0
     }
 
@@ -177,6 +181,7 @@ def get_employee_criteria(employee_id, employee_reviews):
         response = requests.post(url, json=data)
         response.raise_for_status()
         response_data = response.json()
+        print(response_data)
         return response_data.strip() if response_data else None
     except requests.exceptions.HTTPError as e:
         print(f"HTTP ошибка: {e}")
@@ -205,8 +210,8 @@ def start_neural_analysis(worker_ids):
     # Здесь выполняйте ваши действия для анализа
     unified_criteria = get_criterias(worker_ids)
     create_variables(unified_criteria, worker_ids)
-
+# #
 # if __name__ == "__main__":
-#     selected_employee_ids = ["90090"]  # Замените на ваши ID
+#     selected_employee_ids = [55112, 55234, 55114]  # Замените на ваши ID
 #     unified_criteria = get_criterias(selected_employee_ids)
 #     create_variables(unified_criteria, selected_employee_ids)

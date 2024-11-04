@@ -10,6 +10,7 @@ from database_create import User, ReviewsData, NeuralAnalysisRequest  # Убед
 from dotenv import load_dotenv
 from api_get import start_neural_analysis
 import os
+import re
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -180,21 +181,19 @@ def get_all_analysis_requests(db: Session = Depends(get_db)):
     count = 0
 
     for request in analysis_requests:
-        # Предполагается, что analysis_result - это двумерный список строк
-        # Преобразуем строки в числовые значения
-        numbers = []
-        if isinstance(request.analysis_result, list):
-            for inner_list in request.analysis_result:
-                for item in inner_list:
-                    # Предполагается, что item - это строка, которая может содержать цифры
-                    digits = ''.join(filter(str.isdigit, item))  # Извлекаем только цифры
-                    if digits:  # Проверяем, не пустая ли строка
-                        numbers.append(int(digits))
+        numbers = []  # Список для хранения целых чисел
 
-        if numbers:  # Если нашли числа, считаем среднее
+        if isinstance(request.analysis_result, list):
+            for inner_list in request.analysis_result:  # Предполагаем, что inner_list - это строка
+                # Ищем числа, включая вещественные, и берем только целую часть
+                matches = re.findall(r'(\d+)[,.]?\d*', inner_list)  # Ищем числа с запятой или точкой
+                for match in matches:
+                    numbers.append(int(match))  # Конвертируем строку в целое число
+
+        if numbers:  # Если нашлись числа, считаем среднее
             average = sum(numbers) / len(numbers)
             total_average += average
-            count += 1  # Увеличиваем счетчик для средних значений
+            count += 1
 
             response_data.append({
                 "id": request.id,
@@ -216,7 +215,7 @@ def get_all_analysis_requests(db: Session = Depends(get_db)):
     average_rating = total_average / count if count > 0 else None
 
     response = JSONResponse(content=response_data)
-    response.headers['average_rating'] = str(average_rating) if average_rating is not None else 'N/A'  # Устанавливаем заголовок
+    response.headers['average_rating'] = str(average_rating) if average_rating is not None else 'N/A'
 
     return response
 
@@ -240,34 +239,34 @@ def get_analysis_results(data: AnalysisRequestModel, db: Session = Depends(get_d
 
     if not filtered_results:
         return JSONResponse({"message": "Запрос не найден, запросите сводку"}, status_code=404)
+    try:
+        response = []
+        for result in filtered_results:
+            criteria_scores = {}
+            for analysis_text in result.analysis_result:
+                criteria_scores.update(parse_analysis_result(analysis_text))
 
-    response = []
-    for result in filtered_results:
-        criteria_scores = {}
-        for analysis_text in result.analysis_result:
-            criteria_scores.update(parse_analysis_result(analysis_text))
+            response.append({
+                "criteria_scores": criteria_scores
+            })
 
-        response.append({
-            "criteria_scores": criteria_scores
+        return JSONResponse(response)
+    except:
+        return JSONResponse({
+            "criteria_scores": None
         })
-
-    return JSONResponse(response)
-
 def parse_analysis_result(analysis_result_text: str):
     criteria_scores = {}
-    # Разбиваем текст по строкам
-    lines = analysis_result_text.split('\n\n')
+    # Регулярное выражение для извлечения критериев и их оценок, включая десятичные значения
+    pattern = r'([\w\s]+):\s*([\d.,]+)'
 
-    for line in lines:
-        if ':' in line:  # Убедимся, что строка содержит критерий
-            criterion, score = line.split(':', 1)
-            criterion = criterion.strip()  # Удаляем пробелы в начале и конце критерия
-
-            # Извлекаем только целочисленное значение из оценки
-            score_value = ''.join(filter(str.isdigit, score))  # Оставляем только цифры
-            if score_value:  # Проверяем, что есть хотя бы одна цифра
-
-                criteria_scores[criterion] = int(score_value[0])  # Конвертируем в целое число
+    # Находим все совпадения в тексте
+    matches = re.findall(pattern, analysis_result_text)
+    for criterion, score in matches:
+        criterion = criterion.strip()  # Убираем пробелы в начале и конце критерия
+        # Убираем точки или запятые в конце оценки, затем преобразуем к целому числу
+        score_value = int(float(score.rstrip('.,').replace(',', '.')) + 0.5)  # Округляем до ближайшего целого
+        criteria_scores[criterion] = score_value
 
     return criteria_scores
 

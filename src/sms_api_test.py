@@ -1,12 +1,9 @@
-
 import requests
-
-
-url = "https://sms.ru/auth/check?api_id=687BB7A9-F4B2-8B0C-4E8A-1F9B50E5FEC8&json=1"
-
-response = requests.get(url)
-
-# Проверка результата
-if response.status_code == 200:
-    data = response.json()
-    print(data)
+all_employee=["1234245",'242245345']
+url="https://notification.pepper-coding.ru/notification/publish"
+if len(all_employee)>1:
+    data={"text":f"Краткая сводка на сотрудников {" ".join(all_employee)} готова."}
+else:
+    data={"text":f"Краткая сводка на сотрудника {all_employee[0]} готова."}
+print(data)
+response = requests.post(url, json=data)

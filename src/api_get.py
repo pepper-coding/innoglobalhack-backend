@@ -119,7 +119,6 @@ def create_variables(criterias, employee_ids):
 
         while True:
             reviews = get_employee_review(employee_id, unique_reviews, criterias)
-            print(reviews)
             # Приводим критерии и отзывы к нижнему регистру для сравнения
             reviews_lower = reviews.lower() if reviews else ""
             criterias_lower = [criterion.lower() for criterion in criterias]
@@ -181,7 +180,6 @@ def get_employee_criteria(employee_id, employee_reviews):
         response = requests.post(url, json=data)
         response.raise_for_status()
         response_data = response.json()
-        print(response_data)
         return response_data.strip() if response_data else None
     except requests.exceptions.HTTPError as e:
         print(f"HTTP ошибка: {e}")

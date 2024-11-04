@@ -1,8 +1,8 @@
 INFO: Platform: win32
 INFO: Version Info: v0.3.0
 DEBUG: Log Path: cp.log
-DEBUG: command: ['python', 'D:\\Python все работы\\инополис fast api\\server.py']
+DEBUG: command: ['python', 'D:\\Python все работы\\инополис fast api\\main.py']
 DEBUG: file: None
 DEBUG: pause: True
 DEBUG: repl: python
-DEBUG: args: ['D:\\Python все работы\\инополис fast api\\server.py']
+DEBUG: args: ['D:\\Python все работы\\инополис fast api\\main.py']
